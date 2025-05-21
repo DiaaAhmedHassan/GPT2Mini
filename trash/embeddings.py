@@ -4,10 +4,10 @@ import torch
 import torch.nn as nn
 
 class GPT2Embedding(nn.Module):
-    def __init__(self, vocab_size, hidden_size, max_seq_len):
+    def __init__(self, vocab_size, embedding_dim, max_seq_len):
         super().__init__()
-        self.token_embeddings = nn.Embedding(vocab_size, hidden_size)     # Lookup for token IDs
-        self.positional_embeddings = nn.Parameter(torch.zeros(1, max_seq_len, hidden_size))  # Learned positions
+        self.token_embeddings = nn.Embedding(vocab_size, embedding_dim)     # Lookup for token IDs
+        self.positional_embeddings = nn.Parameter(torch.zeros(1, max_seq_len, embedding_dim))  # Learned positions
         self.dropout = nn.Dropout(0.1)
 
     def forward(self, x):

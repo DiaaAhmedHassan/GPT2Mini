@@ -135,11 +135,15 @@ class EmbeddingLayer(nn.Module):
         super().__init__()
         self.token_embedding = nn.Embedding(vocab_size, embedding_dim)
         self.position_embedding = nn.Parameter(torch.zeros(1, max_seq_len, embedding_dim))
+
+        # initialize positional_embedding tensor using normal distribution
         nn.init.normal_(self.position_embedding, std=0.02)
+
+        self.dropout = nn.Dropout(0.1)
 
     def forward(self, input_ids):
         # input_ids: (batch_size, seq_len)
         token_emb = self.token_embedding(input_ids)  # (B, T, D)
         seq_len = input_ids.size(1)
         pos_emb = self.position_embedding[:, :seq_len, :]  # (1, T, D)
-        return token_emb + pos_emb
+        return self.dropout(token_emb + pos_emb)

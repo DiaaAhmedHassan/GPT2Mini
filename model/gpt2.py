@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 from decoder import DecoderLayer
-from embeddings import GPT2Embedding
+# from embeddings import GPT2Embedding
 from decoder import EmbeddingLayer, OutputLayer
 
 class GPT2Model(nn.Module):
@@ -18,7 +18,7 @@ class GPT2Model(nn.Module):
             dropout = 0.1,
         ):
         super().__init__()
-        self.embeddings = GPT2Embedding(vocab_size, embedding_dim, max_seq_len)
+        self.embeddings = EmbeddingLayer(vocab_size, embedding_dim, max_seq_len)
         self.layers = nn.ModuleList([DecoderLayer(embedding_dim, num_heads, ff_embedding_dim) for _ in range(num_layers)])
         self.ln_f = nn.LayerNorm(embedding_dim)
         self.lm_head = nn.Linear(embedding_dim, vocab_size, bias=False)
