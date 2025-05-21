@@ -119,3 +119,27 @@ class DecoderLayer(nn.Module):
         # # Feed-forward + residual
         # ffn_out = self.ffn(self.ln2(x))
         # x = x + ffn_out
+
+
+class OutputLayer(nn.Module):
+    def __init__(self, embedding_dim, vocab_size):
+        super().__init__()
+        self.proj = nn.Linear(embedding_dim, vocab_size, bias=False)
+
+    def forward(self, x):
+        return self.proj(x)  # (B, T, V)
+
+
+class EmbeddingLayer(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, max_seq_len):
+        super().__init__()
+        self.token_embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.position_embedding = nn.Parameter(torch.zeros(1, max_seq_len, embedding_dim))
+        nn.init.normal_(self.position_embedding, std=0.02)
+
+    def forward(self, input_ids):
+        # input_ids: (batch_size, seq_len)
+        token_emb = self.token_embedding(input_ids)  # (B, T, D)
+        seq_len = input_ids.size(1)
+        pos_emb = self.position_embedding[:, :seq_len, :]  # (1, T, D)
+        return token_emb + pos_emb
