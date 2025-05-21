@@ -18,12 +18,19 @@ class GPT2Model(nn.Module):
             dropout = 0.1,
         ):
         super().__init__()
+        # Positional Encoding
         self.embeddings = EmbeddingLayer(vocab_size, embedding_dim, max_seq_len)
+        
+        # Decoder Stack
         self.layers = nn.ModuleList([DecoderLayer(embedding_dim, num_heads, ff_embedding_dim) for _ in range(num_layers)])
+        
+        # Layer Normalization
         self.ln_f = nn.LayerNorm(embedding_dim)
+
+        # output layer
         self.lm_head = nn.Linear(embedding_dim, vocab_size, bias=False)
-        self.embeddings = EmbeddingLayer(vocab_size, embedding_dim, max_seq_len)
-        self.lm_head = OutputLayer(embedding_dim, vocab_size)
+        # self.embeddings = EmbeddingLayer(vocab_size, embedding_dim, max_seq_len)
+        # self.lm_head = OutputLayer(embedding_dim, vocab_size)
 
     def forward(self, x, mask=None):
         x = self.embeddings(x)

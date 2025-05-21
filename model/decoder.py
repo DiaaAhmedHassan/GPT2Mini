@@ -135,24 +135,6 @@ class EmbeddingLayer(nn.Module):
         pos_emb = self.position_embedding[:, :seq_len, :]  # (1, T, D)
         return self.dropout(token_emb + pos_emb)
 
-
-class GPT2Decoder(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, num_heads, ff_dim, num_layers, max_seq_len, dropout=0.1):
-        super().__init__()
-        self.embedding = EmbeddingLayer(vocab_size, embedding_dim, max_seq_len)
-        self.layers = nn.ModuleList([
-            DecoderLayer(embedding_dim, num_heads, ff_dim, dropout) for _ in range(num_layers)
-        ])
-        self.ln_f = nn.LayerNorm(embedding_dim)
-        self.output_layer = OutputLayer(embedding_dim, vocab_size)
-    
-    def forward(self, input_ids, mask=None):
-        x = self.embedding(input_ids)
-        for layer in self.layers:
-            x = layer(x, mask)
-        x = self.ln_f(x)
-        return self.output_layer(x)
-
 def create_causal_mask(seq_len):
     mask = torch.tril(torch.ones(seq_len, seq_len)).unsqueeze(0).unsqueeze(0)  # (1, 1, T, T)
     return mask
