@@ -12,10 +12,10 @@ H: number of attention heads
 d: head dimension
 """
 class PositionalEncoding(nn.Module):
-    def __init__(self, max_seq_len, hidden_size):
+    def __init__(self, max_seq_len, embedding_dim):
         super(PositionalEncoding, self).__init__()
 
-        self.embeddings = nn.Embedding(max_seq_len, hidden_size)
+        self.embeddings = nn.Embedding(max_seq_len, embedding_dim)
     
     def forward(self, x):
         seq_len = x.size(1)
@@ -25,14 +25,14 @@ class PositionalEncoding(nn.Module):
         return x+pos_emb
 
 class MultiHeadSelfAttention(nn.Module):
-    def __init__(self, hidden_size, num_heads, dropout=0.1):
+    def __init__(self, embedding_dim, num_heads, dropout=0.1):
         super().__init__()
-        assert hidden_size % num_heads == 0
+        assert embedding_dim % num_heads == 0
         self.num_heads = num_heads
-        self.head_dim = hidden_size // num_heads
+        self.head_dim = embedding_dim // num_heads
 
-        self.qkv_proj = nn.Linear(hidden_size, hidden_size * 3)
-        self.out_proj = nn.Linear(hidden_size, hidden_size)
+        self.qkv_proj = nn.Linear(embedding_dim, embedding_dim * 3)
+        self.out_proj = nn.Linear(embedding_dim, embedding_dim)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, mask=None):
@@ -64,15 +64,14 @@ class MultiHeadSelfAttention(nn.Module):
         out = attn @ v  # (B, H, T, d)
         out = out.transpose(1, 2).contiguous().view(B, T, D)
         return self.out_proj(out)
-    
 
 class FeedForward(nn.Module):
-    def __init__(self, hidden_size, ff_hidden_size, dropout=0.1):
+    def __init__(self, embedding_dim, ff_embedding_dim, dropout=0.1):
         super().__init__()
         self.ff = nn.Sequential(
-            nn.Linear(hidden_size, ff_hidden_size),
+            nn.Linear(embedding_dim, ff_embedding_dim),
             nn.GELU(), # Gaussian Error Linear Units
-            nn.Linear(ff_hidden_size, hidden_size),
+            nn.Linear(ff_embedding_dim, embedding_dim),
             nn.Dropout(dropout)
         )
 
@@ -87,27 +86,26 @@ class ResidualBlock(nn.Module):
     
     def forward(self, x, **kwargs):
         return self.norm(x+self.sub_layer(x, **kwargs) if kwargs else self.sub_layer(x))
-    
 
 class DecoderLayer(nn.Module):
-    def __init__(self, hidden_size, num_heads, ff_hidden_size, dropout=0.1):
+    def __init__(self, embedding_dim, num_heads, ff_embedding_dim, dropout=0.1):
         super().__init__()
 
         self.attn = ResidualBlock(
-            MultiHeadSelfAttention(hidden_size, num_heads), 
-            hidden_size
+            MultiHeadSelfAttention(embedding_dim, num_heads), 
+            embedding_dim
         )
 
         self.ffn = ResidualBlock(
-            FeedForward(hidden_size, ff_hidden_size, dropout), 
-            hidden_size
+            FeedForward(embedding_dim, ff_embedding_dim, dropout), 
+            embedding_dim
         )
 
-        # self.attn = MultiHeadSelfAttention(config.hidden_size, config.num_heads, config.dropout)
-        # self.ffn = FeedForward(config.hidden_size, config.ff_hidden_size, config.dropout)
+        # self.attn = MultiHeadSelfAttention(config.embedding_dim, config.num_heads, config.dropout)
+        # self.ffn = FeedForward(config.embedding_dim, config.ff_embedding_dim, config.dropout)
 
-        # self.ln1 = nn.LayerNorm(config.hidden_size)
-        # self.ln2 = nn.LayerNorm(config.hidden_size)
+        # self.ln1 = nn.LayerNorm(config.embedding_dim)
+        # self.ln2 = nn.LayerNorm(config.embedding_dim)
 
     def forward(self, x, mask=None):
 

@@ -4,7 +4,7 @@ import json
 from decoder import DecoderLayer
 
 # --- Load Vocab ---
-with open("check_points/tokenizer_vocab.json") as f:
+with open("../check_points/tokenizer_vocab.json") as f:
     word2idx = json.load(f)
 idx2word = {int(v): k for k, v in word2idx.items()}
 pad_id = word2idx["<pad>"]
