@@ -11,6 +11,18 @@ D: size of embedding
 H: number of attention heads
 d: head dimension
 """
+class PositionalEncoding(nn.Module):
+    def __init__(self, max_seq_len, hidden_size):
+        super(PositionalEncoding, self).__init__()
+
+        self.embeddings = nn.Embedding(max_seq_len, hidden_size)
+    
+    def forward(self, x):
+        seq_len = x.size(1)
+        positions = torch.arange(0, seq_len, device=x.device).unsqueeze(0)
+        pos_emb = self.embeddings(positions)
+
+        return x+pos_emb
 
 class MultiHeadSelfAttention(nn.Module):
     def __init__(self, hidden_size, num_heads, dropout=0.1):
@@ -52,6 +64,7 @@ class MultiHeadSelfAttention(nn.Module):
         out = attn @ v  # (B, H, T, d)
         out = out.transpose(1, 2).contiguous().view(B, T, D)
         return self.out_proj(out)
+    
 
 class FeedForward(nn.Module):
     def __init__(self, hidden_size, ff_hidden_size, dropout=0.1):
@@ -66,22 +79,45 @@ class FeedForward(nn.Module):
     def forward(self, x):
         return self.ff(x)
 
-class DecoderLayer(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.attn = MultiHeadSelfAttention(config.hidden_size, config.num_heads, config.dropout)
-        self.ffn = FeedForward(config.hidden_size, config.ff_hidden_size, config.dropout)
+class ResidualBlock(nn.Module):
+    def __init__(self, sub_layer, hidden_size):
+        super(ResidualBlock, self).__init__()
+        self.sub_layer = sub_layer
+        self.norm = nn.LayerNorm(hidden_size)
+    
+    def forward(self, x, **kwargs):
+        return self.norm(x+self.sub_layer(x, **kwargs) if kwargs else self.sub_layer(x))
+    
 
-        self.ln1 = nn.LayerNorm(config.hidden_size)
-        self.ln2 = nn.LayerNorm(config.hidden_size)
+class DecoderLayer(nn.Module):
+    def __init__(self, hidden_size, num_heads, ff_hidden_size, dropout=0.1):
+        super().__init__()
+
+        self.attn = ResidualBlock(
+            MultiHeadSelfAttention(hidden_size, num_heads), 
+            hidden_size
+        )
+
+        self.ffn = ResidualBlock(
+            FeedForward(hidden_size, ff_hidden_size, dropout), 
+            hidden_size
+        )
+
+        # self.attn = MultiHeadSelfAttention(config.hidden_size, config.num_heads, config.dropout)
+        # self.ffn = FeedForward(config.hidden_size, config.ff_hidden_size, config.dropout)
+
+        # self.ln1 = nn.LayerNorm(config.hidden_size)
+        # self.ln2 = nn.LayerNorm(config.hidden_size)
 
     def forward(self, x, mask=None):
-        # Self-attention + residual
-        attn_out = self.attn(self.ln1(x), mask)
-        x = x + attn_out
 
-        # Feed-forward + residual
-        ffn_out = self.ffn(self.ln2(x))
-        x = x + ffn_out
-
+        x = self.attn(x)
+        x = self.ffn(x)
         return x
+        # Self-attention + residual
+        # attn_out = self.attn(self.ln1(x), mask)
+        # x = x + attn_out
+
+        # # Feed-forward + residual
+        # ffn_out = self.ffn(self.ln2(x))
+        # x = x + ffn_out
