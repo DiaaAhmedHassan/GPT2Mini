@@ -11,19 +11,6 @@ D: size of embedding
 H: number of attention heads
 d: head dimension
 """
-class PositionalEncoding(nn.Module):
-    def __init__(self, max_seq_len, embedding_dim):
-        super(PositionalEncoding, self).__init__()
-
-        self.embeddings = nn.Embedding(max_seq_len, embedding_dim)
-    
-    def forward(self, x):
-        seq_len = x.size(1)
-        positions = torch.arange(0, seq_len, device=x.device).unsqueeze(0)
-        pos_emb = self.embeddings(positions)
-
-        return x+pos_emb
-
 class MultiHeadSelfAttention(nn.Module):
     def __init__(self, embedding_dim, num_heads, dropout=0.1):
         super().__init__()
@@ -147,3 +134,54 @@ class EmbeddingLayer(nn.Module):
         seq_len = input_ids.size(1)
         pos_emb = self.position_embedding[:, :seq_len, :]  # (1, T, D)
         return self.dropout(token_emb + pos_emb)
+
+
+class GPT2Decoder(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, num_heads, ff_dim, num_layers, max_seq_len, dropout=0.1):
+        super().__init__()
+        self.embedding = EmbeddingLayer(vocab_size, embedding_dim, max_seq_len)
+        self.layers = nn.ModuleList([
+            DecoderLayer(embedding_dim, num_heads, ff_dim, dropout) for _ in range(num_layers)
+        ])
+        self.ln_f = nn.LayerNorm(embedding_dim)
+        self.output_layer = OutputLayer(embedding_dim, vocab_size)
+    
+    def forward(self, input_ids, mask=None):
+        x = self.embedding(input_ids)
+        for layer in self.layers:
+            x = layer(x, mask)
+        x = self.ln_f(x)
+        return self.output_layer(x)
+
+def create_causal_mask(seq_len):
+    mask = torch.tril(torch.ones(seq_len, seq_len)).unsqueeze(0).unsqueeze(0)  # (1, 1, T, T)
+    return mask
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # ✅ proper check
+mask = create_causal_mask(10).to(device)   
+
+
+# model = GPT2Decoder(
+#     vocab_size=1000,
+#     embedding_dim=64,
+#     max_seq_len=50,
+#     num_heads=4,
+#     ff_dim=256,
+#     num_layers=2
+# )
+
+# input_ids = torch.randint(0, 1000, (8, 10))
+# labels = input_ids.clone()
+
+# optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+# criterion = nn.CrossEntropyLoss()
+
+# for _ in range(350):
+#     logits = model(input_ids)
+#     loss = criterion(logits.view(-1, 1000), labels.view(-1))
+#     loss.backward()
+#     optimizer.step()
+#     optimizer.zero_grad()
+#     print(f"Loss: {loss.item():.4f}")
+
+
