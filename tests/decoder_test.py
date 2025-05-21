@@ -1,6 +1,10 @@
 import torch
 import torch.nn as nn
 import json
+
+import sys
+sys.dont_write_bytecode = True # disabling __pycache__
+sys.path.insert(0, '../model/')
 from decoder import DecoderLayer
 
 # --- Load Vocab ---
