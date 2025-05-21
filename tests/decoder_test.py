@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from model.decoder import DecoderLayer
 
 # --- Load Vocab ---
-with open("check_points/tokenizer_vocab.json") as f:
+with open("check_points/vocab.json") as f:
     word2idx = json.load(f)
 idx2word = {int(v): k for k, v in word2idx.items()}
 pad_id = word2idx["<pad>"]
@@ -45,7 +45,7 @@ T = max_len
 mask = torch.tril(torch.ones(T, T)).unsqueeze(0).unsqueeze(0)  # [1, 1, T, T]
 
 # --- Step 5: Decoder Forward ---
-decoder = DecoderLayer(DummyConfig())
+decoder = DecoderLayer(embedding_dim=64, num_heads=4, ff_embedding_dim=256, dropout=0.1)
 output = decoder(embedded_input, mask)  # [1, seq_len, hidden_size]
 
 # --- Step 6: Check Output ---
