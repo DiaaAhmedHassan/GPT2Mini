@@ -83,6 +83,8 @@ class DecoderLayer(nn.Module):
             embedding_dim
         )
 
+        
+
         self.ffn = ResidualBlock(
             FeedForward(embedding_dim, ff_embedding_dim, dropout), 
             embedding_dim

@@ -22,7 +22,7 @@ class Tokenizer:
     def encode(self, text: str) -> list[int]:
         # dict.get(key, default_value)
         # self.word2idx.get(w, self.word2idx['<unk>'])
-        return [self.word2idx[w] for w in text.split()]
+        return [self.word2idx.get(w, self.word2idx.get("<unk>", 0)) for w in text.split()]
 
     def decode(self, ids: list[int]) -> str:
         # self.idx2word.get(i, "<unk>")
