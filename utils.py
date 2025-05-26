@@ -9,8 +9,8 @@ class Tokenizer:
         
         for text in texts:
             words.update(text.split())
-
-        self.vocab = {word: i for i, word in enumerate(sorted(words), start=0)}
+        special_tokens = ["<pad>", "<unk>", "<sos>", "<eos>"]    
+        self.vocab = {word: i for i, word in enumerate(special_tokens+sorted(words), start=0)}
         self.word2idx = self.vocab
         self.idx2word = {i: word for word, i in self.vocab.items()}
 
